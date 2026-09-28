@@ -409,7 +409,14 @@ def load_processed_data():
                 data = pickle.load(f)
             return data
         except Exception as e:
-            print(f"[!] Warning: Failed to load pickle ({e}). Regenerating...")
+            print(f"[!] Warning: Failed to load pickle ({e}). Rebuilding cache from existing CSV...")
+            try:
+                df = pd.read_csv(DATASET_CSV)
+                build_and_save_pickle(df)
+                with open(PICKLE_FILE, 'rb') as f:
+                    return pickle.load(f)
+            except Exception as inner_e:
+                print(f"[!] Warning: Failed to rebuild from CSV ({inner_e}). Regenerating full dataset...")
     
     create_dataset()
     with open(PICKLE_FILE, 'rb') as f:
