@@ -1,0 +1,2054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bangladesh Flood Disaster Management & Optimization Tool | বন্যা ব্যবস্থাপনা ও অপ্টিমাইজেশন</title>
+  <meta name="description" content="Offline interactive AI optimization tool for Bangladesh flood disaster response using A*, CSP, and Hill Climbing algorithms.">
+
+  <!-- Local Offline Leaflet CSS -->
+  <link rel="stylesheet" href="/static/leaflet.css">
+
+  <!-- Local Offline Scripts -->
+  <script src="/static/leaflet.js"></script>
+  <script src="/static/chart.umd.min.js"></script>
+
+  <style>
+    /* Modern Premium Design System (Self-Contained, No CDN) */
+    :root {
+      --bg-main: #0b1120;
+      --bg-card: #151f32;
+      --bg-card-hover: #1e2c45;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --cyan: #06b6d4;
+      --purple: #8b5cf6;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Header & Navigation */
+    header {
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .brand-icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, #2563eb, #06b6d4);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+    }
+
+    .brand-text h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    .brand-text p {
+      font-size: 0.75rem;
+      color: #38bdf8;
+      font-weight: 500;
+    }
+
+    .nav-tabs {
+      display: flex;
+      background: rgba(30, 41, 59, 0.7);
+      border-radius: 10px;
+      padding: 4px;
+      gap: 4px;
+      border: 1px solid var(--border-color);
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: 7px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tab-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+    }
+
+    /* Main Container */
+    main {
+      flex: 1;
+      padding: 1.5rem;
+      max-width: 1600px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Grid & Card Utilities */
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.25rem;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: #e2e8f0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 0.6rem;
+    }
+
+    /* KPI Stat Box */
+    .stat-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 1.15rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 4px;
+    }
+    .stat-blue::before { background: var(--primary); }
+    .stat-emerald::before { background: var(--emerald); }
+    .stat-amber::before { background: var(--amber); }
+    .stat-rose::before { background: var(--rose); }
+
+    .stat-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .stat-info .label {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-info .val {
+      font-size: 1.45rem;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 2px;
+    }
+
+    .stat-info .sub {
+      font-size: 0.72rem;
+      color: #38bdf8;
+      margin-top: 2px;
+    }
+
+    /* Filter Controls */
+    .filter-bar {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 0.9rem 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 170px;
+      flex: 1;
+    }
+
+    .filter-group label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .filter-group select, .filter-group input {
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      padding: 7px 10px;
+      color: #fff;
+      font-size: 0.85rem;
+      outline: none;
+    }
+    .filter-group select:focus, .filter-group input:focus {
+      border-color: var(--primary);
+    }
+
+    .btn {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: none;
+      transition: all 0.2s ease;
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: #fff;
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #1d4ed8, #1e40af);
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+    }
+
+    .btn-emerald {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+    }
+    .btn-emerald:hover {
+      background: linear-gradient(135deg, #059669, #047857);
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+    }
+
+    /* Map Elements */
+    .map-container {
+      width: 100%;
+      height: 480px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+      background: #090e17;
+      position: relative;
+    }
+
+    /* Table Styles */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      max-height: 420px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+      text-align: left;
+    }
+
+    th {
+      background: #0f172a;
+      color: var(--text-muted);
+      padding: 9px 12px;
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    td {
+      padding: 9px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: #cbd5e1;
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .badge-rose { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.3); }
+    .badge-amber { background: rgba(245, 158, 11, 0.2); color: #fde68a; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-emerald { background: rgba(16, 185, 129, 0.2); color: #a7f3d0; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-blue { background: rgba(59, 130, 246, 0.2); color: #bfdbfe; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+    /* Confusion Matrix 2x2 UI */
+    .cm-wrapper {
+      background: #0f172a;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+
+    .cm-grid {
+      display: grid;
+      grid-template-columns: 80px 1fr 1fr;
+      grid-template-rows: auto auto auto;
+      gap: 6px;
+      text-align: center;
+      font-size: 0.82rem;
+      margin: 10px 0;
+    }
+
+    .cm-cell {
+      padding: 10px 8px;
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .cm-tp { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3); }
+    .cm-tn { background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); }
+    .cm-fp { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.3); }
+    .cm-fn { background: rgba(244, 63, 94, 0.15); border-color: rgba(244, 63, 94, 0.3); }
+
+    .cm-num { font-size: 1.25rem; font-weight: 700; color: #fff; }
+    .cm-lbl { font-size: 0.68rem; color: var(--text-muted); }
+
+    .cm-metrics-row {
+      display: flex;
+      justify-content: space-around;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 8px;
+      margin-top: 8px;
+    }
+    .cm-metric-item {
+      text-align: center;
+    }
+    .cm-metric-val {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+    .cm-metric-name {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+    }
+
+    /* Comparison Bar Metrics */
+    .progress-bar-container {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      height: 8px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 8px;
+      transition: width 0.6s ease;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .grid-2 { grid-template-columns: 1fr; }
+      header { flex-direction: column; align-items: stretch; }
+      .nav-tabs { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation & Brand Header -->
+  <header>
+    <div class="brand-group">
+      <div class="brand-icon">🌊</div>
+      <div class="brand-text">
+        <h1>Bangladesh Flood Disaster Management Interactive Tool</h1>
+        <p>বন্যা দুর্যোগ ব্যবস্থাপনা ও অপ্টিমাইজেশন মডেল (A* • CSP • Hill Climbing)</p>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('dashboard')">
+        <span>📊</span> Executive Dashboard
+      </button>
+      <button class="tab-btn" onclick="switchTab('astar')">
+        <span>🧭</span> A* Route Finder
+      </button>
+      <button class="tab-btn" onclick="switchTab('csp')">
+        <span>👥</span> CSP Team Allocation
+      </button>
+      <button class="tab-btn" onclick="switchTab('hillclimbing')">
+        <span>🏕️</span> Hill Climbing Shelters
+      </button>
+      <button class="tab-btn" onclick="switchTab('comparison')">
+        <span>⚖️</span> Comparison & Benchmarks
+      </button>
+    </nav>
+  </header>
+
+  <!-- Main Content Areas -->
+  <main>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: EXECUTIVE DASHBOARD                 -->
+    <!-- ========================================== -->
+    <section id="tab-dashboard" class="tab-content active">
+      <!-- KPI Overview Cards -->
+      <div class="grid-4">
+        <div class="stat-box stat-blue">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info">
+            <div class="label">Total Population Indexed</div>
+            <div class="val" id="kpi-pop">Loading...</div>
+            <div class="sub">390,499 Total Records</div>
+          </div>
+        </div>
+        <div class="stat-box stat-rose">
+          <div class="stat-icon">🚨</div>
+          <div class="stat-info">
+            <div class="label">High Flood Risk Areas</div>
+            <div class="val" id="kpi-high-risk">Loading...</div>
+            <div class="sub" id="kpi-families">Affected Families</div>
+          </div>
+        </div>
+        <div class="stat-box stat-emerald">
+          <div class="stat-icon">🏕️</div>
+          <div class="stat-info">
+            <div class="label">Recorded Safe Shelters</div>
+            <div class="val" id="kpi-shelters">Loading...</div>
+            <div class="sub">Schools, Centers, Mosques</div>
+          </div>
+        </div>
+        <div class="stat-box stat-amber">
+          <div class="stat-icon">📂</div>
+          <div class="stat-info">
+            <div class="label">Dataset Splits (In-Memory)</div>
+            <div class="val">40 / 30 / 30%</div>
+            <div class="sub">Train • Test • Validate</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Regional Administrative Selector -->
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label>Select Zilla (জেলা)</label>
+          <select id="dash-zilla" onchange="onZillaChange(this.value)">
+            <option value="">All Flood-Prone Districts (64 Zillas)</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Select Upazila (উপজেলা)</label>
+          <select id="dash-upazila" onchange="loadDashboardAreas()">
+            <option value="">All Upazilas</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:flex-end;">
+          <button class="btn btn-primary" onclick="loadDashboardAreas()">
+            <span>🔍</span> Filter Map & Charts
+          </button>
+          <a href="/api/export/csv/comparison" class="btn btn-secondary">
+            <span>📥</span> Export Benchmark CSV
+          </a>
+        </div>
+      </div>
+
+      <!-- Dashboard Visuals: Map + Analytics -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <span>🗺️ Flood Vulnerability Spatial Map (Bangladesh)</span>
+            <span class="badge badge-rose">Live Risk Zones</span>
+          </div>
+          <div id="map-dashboard" class="map-container"></div>
+          <div style="display:flex; justify-content:space-between; margin-top:0.75rem; font-size:0.75rem; color:var(--text-muted);">
+            <span><span style="color:#f43f5e;">●</span> High Risk (&gt;0.70)</span>
+            <span><span style="color:#f59e0b;">●</span> Medium Risk (0.40 - 0.70)</span>
+            <span><span style="color:#10b981;">●</span> Safe / Low Risk (&lt;0.40)</span>
+            <span><span style="color:#38bdf8;">▲</span> Disaster Shelters</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>📈 Regional Flood Risk & Elevation Distribution</span>
+            <span class="badge badge-blue">Statistical Analysis</span>
+          </div>
+          <div style="position:relative; height:380px;">
+            <canvas id="chart-dashboard-risk"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Data Splits Breakdown Table -->
+      <div class="card">
+        <div class="card-title">
+          <span>📁 Programmatic Dataset Partitioning (390,499 Records)</span>
+          <span class="badge badge-emerald">In-Memory Cached</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Data Partition</th>
+                <th>File Path</th>
+                <th>Record Count</th>
+                <th>Ratio (%)</th>
+                <th>Storage Size</th>
+                <th>Purpose in Disaster Optimization</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Training Split</strong></td>
+                <td><code>/data/train.csv</code></td>
+                <td>156,200</td>
+                <td><span class="badge badge-blue">40.0%</span></td>
+                <td>23.58 MB</td>
+                <td>Heuristic weight calibration, spatial transition matrices & constraint modeling</td>
+              </tr>
+              <tr>
+                <td><strong>Testing Split</strong></td>
+                <td><code>/data/test.csv</code></td>
+                <td>117,149</td>
+                <td><span class="badge badge-emerald">30.0%</span></td>
+                <td>17.69 MB</td>
+                <td>Algorithm performance evaluation, route cost validation & confusion matrix calculation</td>
+              </tr>
+              <tr>
+                <td><strong>Validation Split</strong></td>
+                <td><code>/data/validate.csv</code></td>
+                <td>117,150</td>
+                <td><span class="badge badge-amber">30.0%</span></td>
+                <td>17.69 MB</td>
+                <td>Hyperparameter tuning (risk aversion alpha, coverage radius, team response bounds)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: A* ROUTE FINDER                     -->
+    <!-- ========================================== -->
+    <section id="tab-astar" class="tab-content">
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label>District Focus (জেলা)</label>
+          <select id="astar-zilla" onchange="loadAStarAreas()">
+            <option value="Sunamganj">Sunamganj (সুনামগঞ্জ - Haor Basin)</option>
+            <option value="Sylhet">Sylhet (সিলেট - Surma Basin)</option>
+            <option value="Kurigram">Kurigram (কুড়িগ্রাম - Brahmaputra)</option>
+            <option value="Feni">Feni (ফেনী - Muhuri Basin)</option>
+            <option value="Sirajganj">Sirajganj (সিরাজগঞ্জ - Jamuna)</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Starting Affected Settlement (উৎস এলাকা)</label>
+          <select id="astar-start-node">
+            <option value="">Auto-selecting...</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Destination Shelter (গন্তব্য আশ্রয়কেন্দ্র)</label>
+          <select id="astar-goal-node">
+            <option value="">Auto-selecting...</option>
+          </select>
+        </div>
+        <div class="filter-group" style="min-width:140px;">
+          <label>Risk Avoidance Factor: <span id="lbl-risk-weight">3.5x</span></label>
+          <input type="range" id="astar-risk-weight" min="1.0" max="8.0" step="0.5" value="3.5"
+                 oninput="document.getElementById('lbl-risk-weight').innerText = this.value + 'x'">
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:flex-end;">
+          <button class="btn btn-primary" onclick="runAStar()">
+            <span>⚡</span> Execute A* Search
+          </button>
+          <a href="/api/export/csv/astar" class="btn btn-secondary">
+            <span>📥</span> Export Route CSV
+          </a>
+        </div>
+      </div>
+
+      <!-- A* Results Summary Bar -->
+      <div class="grid-4" id="astar-kpi-bar" style="margin-bottom:1rem;">
+        <div class="stat-box stat-emerald">
+          <div class="stat-icon">🛡️</div>
+          <div class="stat-info">
+            <div class="label">Route Safety Score</div>
+            <div class="val" id="astar-res-safety">--</div>
+            <div class="sub" id="astar-res-safetysub">Vs Naive Shortest</div>
+          </div>
+        </div>
+        <div class="stat-box stat-blue">
+          <div class="stat-icon">📏</div>
+          <div class="stat-info">
+            <div class="label">Total Safe Distance</div>
+            <div class="val" id="astar-res-dist">--</div>
+            <div class="sub" id="astar-res-distsub">Physical Traversal</div>
+          </div>
+        </div>
+        <div class="stat-box stat-amber">
+          <div class="stat-icon">⏱️</div>
+          <div class="stat-info">
+            <div class="label">Execution Time</div>
+            <div class="val" id="astar-res-time">--</div>
+            <div class="sub">Target &lt; 5 seconds</div>
+          </div>
+        </div>
+        <div class="stat-box stat-rose">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-info">
+            <div class="label">Efficiency Score</div>
+            <div class="val" id="astar-res-eff">--</div>
+            <div class="sub">Distance vs Risk Trade-off</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map & Step by Step Route Table -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <span>🗺️ Optimal Evacuation Corridor (A* vs. Naive Route)</span>
+            <span class="badge badge-emerald">Safe Highland Path</span>
+          </div>
+          <div id="map-astar" class="map-container"></div>
+          <div style="display:flex; justify-content:space-between; margin-top:0.75rem; font-size:0.75rem; color:var(--text-muted);">
+            <span><span style="color:#10b981; font-weight:bold;">━━</span> A* Optimal Safe Corridor (High Ground)</span>
+            <span><span style="color:#f43f5e; font-weight:bold;">━━</span> Naive Shortest Distance (Crosses Inundated Basin)</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>📊 2x2 Confusion Matrix: Corridor Safety Classification</span>
+            <span class="badge badge-blue">Safety Threshold Benchmark</span>
+          </div>
+          <p style="font-size:0.78rem; color:var(--text-muted); margin-bottom:0.5rem;">
+            Classifies waypoints based on Ground Truth Flood Inundation vs Model Traversal Decision.
+          </p>
+          <div class="cm-wrapper">
+            <div class="cm-grid">
+              <div></div>
+              <div style="font-weight:600; color:var(--primary);">Predicted Safe</div>
+              <div style="font-weight:600; color:var(--rose);">Predicted Avoided</div>
+
+              <div style="font-weight:600; color:var(--primary); writing-mode:vertical-rl; transform:rotate(180deg); margin:auto;">Actual Safe</div>
+              <div class="cm-cell cm-tp">
+                <div class="cm-num" id="astar-cm-tp">0</div>
+                <div class="cm-lbl">TP (Safe Path Used)</div>
+              </div>
+              <div class="cm-cell cm-fn">
+                <div class="cm-num" id="astar-cm-fn">0</div>
+                <div class="cm-lbl">FN (Safe Bypassed)</div>
+              </div>
+
+              <div style="font-weight:600; color:var(--rose); writing-mode:vertical-rl; transform:rotate(180deg); margin:auto;">Actual Hazard</div>
+              <div class="cm-cell cm-fp">
+                <div class="cm-num" id="astar-cm-fp">0</div>
+                <div class="cm-lbl">FP (Hazard Traversed)</div>
+              </div>
+              <div class="cm-cell cm-tn">
+                <div class="cm-num" id="astar-cm-tn">0</div>
+                <div class="cm-lbl">TN (Hazard Avoided)</div>
+              </div>
+            </div>
+
+            <div class="cm-metrics-row">
+              <div class="cm-metric-item">
+                <div class="cm-metric-val" id="astar-cm-acc">--</div>
+                <div class="cm-metric-name">Accuracy</div>
+              </div>
+              <div class="cm-metric-item">
+                <div class="cm-metric-val" id="astar-cm-prec">--</div>
+                <div class="cm-metric-name">Precision</div>
+              </div>
+              <div class="cm-metric-item">
+                <div class="cm-metric-val" id="astar-cm-rec">--</div>
+                <div class="cm-metric-name">Recall</div>
+              </div>
+              <div class="cm-metric-item">
+                <div class="cm-metric-val" id="astar-cm-f1">--</div>
+                <div class="cm-metric-name">F1-Score</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:1.25rem;">
+            <div class="card-title" style="font-size:0.9rem;">
+              <span>🧭 Sequential Waypoint Steps</span>
+            </div>
+            <div class="table-container" style="max-height:220px;">
+              <table id="table-astar-steps">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Settlement Name</th>
+                    <th>Upazila</th>
+                    <th>Elevation</th>
+                    <th>Flood Risk</th>
+                    <th>Distance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Run A* search to generate waypoint breakdown</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: CSP RELIEF TEAM ALLOCATION          -->
+    <!-- ========================================== -->
+    <section id="tab-csp" class="tab-content">
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label>District Focus (জেলা)</label>
+          <select id="csp-zilla" onchange="runCSP()">
+            <option value="Sunamganj">Sunamganj (সুনামগঞ্জ)</option>
+            <option value="Kurigram">Kurigram (কুড়িগ্রাম)</option>
+            <option value="Sylhet">Sylhet (সিলেট)</option>
+            <option value="Feni">Feni (ফেনী)</option>
+            <option value="Sirajganj">Sirajganj (সিরাজগঞ্জ)</option>
+            <option value="Noakhali">Noakhali (নোয়াখালী)</option>
+          </select>
+        </div>
+        <div class="filter-group" style="min-width:130px;">
+          <label>Available Relief Teams</label>
+          <input type="number" id="csp-teams" value="15" min="2" max="60">
+        </div>
+        <div class="filter-group" style="min-width:140px;">
+          <label>Team Capacity (Families)</label>
+          <input type="number" id="csp-capacity" value="750" min="100" max="3000" step="50">
+        </div>
+        <div class="filter-group" style="min-width:140px;">
+          <label>Max Response Time (mins)</label>
+          <input type="number" id="csp-max-time" value="120" min="30" max="360" step="15">
+        </div>
+        <div class="filter-group" style="min-width:130px;">
+          <label>Max Teams / Area</label>
+          <input type="number" id="csp-max-per-area" value="2" min="1" max="4">
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:flex-end;">
+          <button class="btn btn-primary" onclick="runCSP()">
+            <span>⚡</span> Solve CSP Allocation
+          </button>
+          <a href="/api/export/csv/csp" class="btn btn-secondary">
+            <span>📥</span> Export Assignments CSV
+          </a>
+        </div>
+      </div>
+
+      <!-- CSP KPI Summary Cards -->
+      <div class="grid-4">
+        <div class="stat-box stat-emerald">
+          <div class="stat-icon">🎯</div>
+          <div class="stat-info">
+            <div class="label">Constraint Satisfaction</div>
+            <div class="val" id="csp-res-csrate">--</div>
+            <div class="sub">Capacity, Time &amp; Resource</div>
+          </div>
+        </div>
+        <div class="stat-box stat-blue">
+          <div class="stat-icon">👥</div>
+          <div class="stat-info">
+            <div class="label">Distress Coverage Rate</div>
+            <div class="val" id="csp-res-coverage">--</div>
+            <div class="sub" id="csp-res-families">Families Supported</div>
+          </div>
+        </div>
+        <div class="stat-box stat-amber">
+          <div class="stat-icon">🚤</div>
+          <div class="stat-info">
+            <div class="label">Avg Response Time</div>
+            <div class="val" id="csp-res-time">--</div>
+            <div class="sub">Transit to Flood Pockets</div>
+          </div>
+        </div>
+        <div class="stat-box stat-rose">
+          <div class="stat-icon">⏱️</div>
+          <div class="stat-info">
+            <div class="label">Execution Time</div>
+            <div class="val" id="csp-res-exectime">--</div>
+            <div class="sub">Backtracking + Forward Check</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map + Assignment Table -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <span>🗺️ Relief Team Deployment & Base Dispatch Map</span>
+            <span class="badge badge-blue">Color-Coded Assignment</span>
+          </div>
+          <div id="map-csp" class="map-container"></div>
+          <div style="display:flex; justify-content:space-between; margin-top:0.75rem; font-size:0.75rem; color:var(--text-muted);">
+            <span><span style="color:#3b82f6;">■</span> Dispatch Bases (EOC / BGB / FSCD)</span>
+            <span><span style="color:#10b981;">●</span> Covered Distress Settlements</span>
+            <span><span style="color:#f43f5e;">▲</span> Unmet Demand Pockets</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>📊 2x2 Confusion Matrix: Distress Allocation Validation</span>
+            <span class="badge badge-emerald">Needs vs Deployment</span>
+          </div>
+          <div class="cm-wrapper">
+            <div class="cm-grid">
+              <div></div>
+              <div style="font-weight:600; color:var(--primary);">Team Assigned</div>
+              <div style="font-weight:600; color:var(--rose);">Unassigned</div>
+
+              <div style="font-weight:600; color:var(--primary); writing-mode:vertical-rl; transform:rotate(180deg); margin:auto;">Critical Need</div>
+              <div class="cm-cell cm-tp">
+                <div class="cm-num" id="csp-cm-tp">0</div>
+                <div class="cm-lbl">TP (Critical Need Served)</div>
+              </div>
+              <div class="cm-cell cm-fn">
+                <div class="cm-num" id="csp-cm-fn">0</div>
+                <div class="cm-lbl">FN (Unserved Distress)</div>
+              </div>
+
+              <div style="font-weight:600; color:var(--rose); writing-mode:vertical-rl; transform:rotate(180deg); margin:auto;">Low Need</div>
+              <div class="cm-cell cm-fp">
+                <div class="cm-num" id="csp-cm-fp">0</div>
+                <div class="cm-lbl">FP (Sub-optimal Allocation)</div>
+              </div>
+              <div class="cm-cell cm-tn">
+                <div class="cm-num" id="csp-cm-tn">0</div>
+                <div class="cm-lbl">TN (Efficient Conservation)</div>
+              </div>
+            </div>
+
+            <div class="cm-metrics-row">
+              <div class="cm-metric-item">
+                <div class="cm-metric-val" id="csp-cm-acc">--</div>
+                <div class="cm-metric-name">Accuracy</div>
+              </div>
+              <div class="cm-metric-item">
+                <div class="cm-metric-val" id="csp-cm-prec">--</div>
+                <div class="cm-metric-name">Precision</div>
+              </div>
+              <div class="cm-metric-item">
+                <div class="cm-metric-val" id="csp-cm-rec">--</div>
+                <div class="cm-metric-name">Recall</div>
+              </div>
+              <div class="cm-metric-item">
+                <div class="cm-metric-val" id="csp-cm-f1">--</div>
+                <div class="cm-metric-name">F1-Score</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:1.25rem;">
+            <div class="card-title" style="font-size:0.9rem;">
+              <span>📋 Relief Team Deployment Schedule</span>
+            </div>
+            <div class="table-container" style="max-height:220px;">
+              <table id="table-csp-assignments">
+                <thead>
+                  <tr>
+                    <th>Team ID</th>
+                    <th>Base Depot</th>
+                    <th>Target Area</th>
+                    <th>Upazila</th>
+                    <th>Transit Time</th>
+                    <th>Families</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Run CSP solver to view assignments</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: HILL CLIMBING SHELTER FINDER        -->
+    <!-- ========================================== -->
+    <section id="tab-hillclimbing" class="tab-content">
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label>District Focus (জেলা)</label>
+          <select id="hc-zilla" onchange="runHillClimbing()">
+            <option value="Sunamganj">Sunamganj (সুনামগঞ্জ)</option>
+            <option value="Kurigram">Kurigram (কুড়িগ্রাম)</option>
+            <option value="Sylhet">Sylhet (সিলেট)</option>
+            <option value="Feni">Feni (ফেনী)</option>
+            <option value="Sirajganj">Sirajganj (সিরাজগঞ্জ)</option>
+            <option value="Gaibandha">Gaibandha (গাইবান্ধা)</option>
+          </select>
+        </div>
+        <div class="filter-group" style="min-width:130px;">
+          <label>Top Shelters (Top-K)</label>
+          <select id="hc-topk">
+            <option value="5">Top 5 Shelters</option>
+            <option value="8" selected>Top 8 Shelters</option>
+            <option value="10">Top 10 Shelters</option>
+          </select>
+        </div>
+        <div class="filter-group" style="min-width:140px;">
+          <label>Coverage Radius (km)</label>
+          <input type="number" id="hc-radius" value="6.0" min="2.0" max="15.0" step="0.5">
+        </div>
+        <div class="filter-group" style="min-width:140px;">
+          <label>Random Restarts</label>
+          <input type="number" id="hc-restarts" value="10" min="3" max="25">
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:flex-end;">
+          <button class="btn btn-primary" onclick="runHillClimbing()">
+            <span>⚡</span> Find Optimal Shelters
+          </button>
+          <a href="/api/export/csv/hillclimbing" class="btn btn-secondary">
+            <span>📥</span> Export Shelters CSV
+          </a>
+        </div>
+      </div>
+
+      <!-- Hill Climbing KPI Cards -->
+      <div class="grid-4">
+        <div class="stat-box stat-emerald">
+          <div class="stat-icon">⭐</div>
+          <div class="stat-info">
+            <div class="label">Location Quality Score</div>
+            <div class="val" id="hc-res-quality">--</div>
+            <div class="sub">Multi-Criteria Suitability (0-100)</div>
+          </div>
+        </div>
+        <div class="stat-box stat-blue">
+          <div class="stat-icon">🏕️</div>
+          <div class="stat-info">
+            <div class="label">Displaced Pop. Covered</div>
+            <div class="val" id="hc-res-pop">--</div>
+            <div class="sub" id="hc-res-popsub">Radius Coverage</div>
+          </div>
+        </div>
+        <div class="stat-box stat-purple">
+          <div class="stat-icon">🏢</div>
+          <div class="stat-info">
+            <div class="label">Total Shelter Capacity</div>
+            <div class="val" id="hc-res-cap">--</div>
+            <div class="sub">Safe High-Ground Beds</div>
+          </div>
+        </div>
+        <div class="stat-box stat-amber">
+          <div class="stat-icon">⏱️</div>
+          <div class="stat-info">
+            <div class="label">Execution Time</div>
+            <div class="val" id="hc-res-time">--</div>
+            <div class="sub">Steepest Ascent + Restarts</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Map + Shelter Table -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <span>🗺️ Optimal Disaster Shelter Locations &amp; Coverage Radius</span>
+            <span class="badge badge-purple">Candidate Site Discovery</span>
+          </div>
+          <div id="map-hc" class="map-container"></div>
+          <div style="display:flex; justify-content:space-between; margin-top:0.75rem; font-size:0.75rem; color:var(--text-muted);">
+            <span><span style="color:#8b5cf6;">★</span> Chosen High-Ground Shelters</span>
+            <span><span style="color:#38bdf8;">○</span> Safe Walking Radius (5-8 km)</span>
+            <span><span style="color:#64748b;">●</span> Unselected Candidates</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>📊 2x2 Confusion Matrix: Shelter Suitability Classification</span>
+            <span class="badge badge-emerald">Site Quality Benchmark</span>
+          </div>
+          <div class="cm-wrapper">
+            <div class="cm-grid">
+              <div></div>
+              <div style="font-weight:600; color:var(--primary);">Selected in Top-K</div>
+              <div style="font-weight:600; color:var(--rose);">Rejected</div>
+
+              <div style="font-weight:600; color:var(--primary); writing-mode:vertical-rl; transform:rotate(180deg); margin:auto;">Safe High-Ground</div>
+              <div class="cm-cell cm-tp">
+                <div class="cm-num" id="hc-cm-tp">0</div>
+                <div class="cm-lbl">TP (Safe Site Selected)</div>
+              </div>
+              <div class="cm-cell cm-fn">
+                <div class="cm-num" id="hc-cm-fn">0</div>
+                <div class="cm-lbl">FN (Safe Site Skipped)</div>
+              </div>
+
+              <div style="font-weight:600; color:var(--rose); writing-mode:vertical-rl; transform:rotate(180deg); margin:auto;">Flood Vulnerable</div>
+              <div class="cm-cell cm-fp">
+                <div class="cm-num" id="hc-cm-fp">0</div>
+                <div class="cm-lbl">FP (Low-Ground Picked)</div>
+              </div>
+              <div class="cm-cell cm-tn">
+                <div class="cm-num" id="hc-cm-tn">0</div>
+                <div class="cm-lbl">TN (Hazard Site Avoided)</div>
+              </div>
+            </div>
+
+            <div class="cm-metrics-row">
+              <div class="cm-metric-item">
+                <div class="cm-metric-val" id="hc-cm-acc">--</div>
+                <div class="cm-metric-name">Accuracy</div>
+              </div>
+              <div class="cm-metric-item">
+                <div class="cm-metric-val" id="hc-cm-prec">--</div>
+                <div class="cm-metric-name">Precision</div>
+              </div>
+              <div class="cm-metric-item">
+                <div class="cm-metric-val" id="hc-cm-rec">--</div>
+                <div class="cm-metric-name">Recall</div>
+              </div>
+              <div class="cm-metric-item">
+                <div class="cm-metric-val" id="hc-cm-f1">--</div>
+                <div class="cm-metric-name">F1-Score</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:1.25rem;">
+            <div class="card-title" style="font-size:0.9rem;">
+              <span>🏆 Ranked Shelter Locations</span>
+            </div>
+            <div class="table-container" style="max-height:220px;">
+              <table id="table-hc-shelters">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Shelter Name &amp; Facility Type</th>
+                    <th>Elevation</th>
+                    <th>Capacity</th>
+                    <th>Quality</th>
+                    <th>Covered Pop</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td colspan="6" style="text-align:center; color:var(--text-muted);">Run Hill Climbing to discover shelters</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- TAB 5: COMPARATIVE ANALYSIS & BENCHMARKS   -->
+    <!-- ========================================== -->
+    <section id="tab-comparison" class="tab-content">
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label>Benchmark Target District</label>
+          <select id="comp-zilla">
+            <option value="Sunamganj">Sunamganj (সুনামগঞ্জ - Flash Flood Basin)</option>
+            <option value="Kurigram">Kurigram (কুড়িগ্রাম - River Basin)</option>
+            <option value="Sylhet">Sylhet (সিলেট)</option>
+            <option value="Feni">Feni (ফেনী)</option>
+            <option value="Sirajganj">Sirajganj (সিরাজগঞ্জ)</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:flex-end;">
+          <button class="btn btn-primary" onclick="runComparisonBenchmark()">
+            <span>🚀</span> Run Full Comparative Benchmark
+          </button>
+          <a href="/api/export/csv/comparison" class="btn btn-emerald">
+            <span>📥</span> Download Full Benchmark CSV
+          </a>
+          <button class="btn btn-secondary" onclick="window.print()">
+            <span>🖨️</span> Print / Save PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Comparative Summary KPIs -->
+      <div class="grid-4">
+        <div class="stat-box stat-blue">
+          <div class="stat-icon">⚡</div>
+          <div class="stat-info">
+            <div class="label">Total Benchmark Time</div>
+            <div class="val" id="comp-total-time">--</div>
+            <div class="sub">3 Algorithms Under &lt; 2s</div>
+          </div>
+        </div>
+        <div class="stat-box stat-emerald">
+          <div class="stat-icon">🏆</div>
+          <div class="stat-info">
+            <div class="label">Fastest Algorithm</div>
+            <div class="val">CSP Solver</div>
+            <div class="sub">&lt; 2 milliseconds</div>
+          </div>
+        </div>
+        <div class="stat-box stat-rose">
+          <div class="stat-icon">🛡️</div>
+          <div class="stat-info">
+            <div class="label">Highest Safety Optimization</div>
+            <div class="val">A* Search</div>
+            <div class="sub">Heuristic Risk Avoidance</div>
+          </div>
+        </div>
+        <div class="stat-box stat-purple">
+          <div class="stat-icon">🏕️</div>
+          <div class="stat-info">
+            <div class="label">Widest Relief Protection</div>
+            <div class="val">Hill Climbing</div>
+            <div class="sub">Multi-Criteria Shelter Pool</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Visual Charts Comparing Algorithms -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-title">
+            <span>⏱️ Algorithm Execution Time Comparison (ms)</span>
+            <span class="badge badge-amber">Lower is Faster</span>
+          </div>
+          <div style="position:relative; height:320px;">
+            <canvas id="chart-comp-time"></canvas>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <span>📈 Algorithm Efficiency &amp; Optimization Scores (%)</span>
+            <span class="badge badge-emerald">Higher is Better</span>
+          </div>
+          <div style="position:relative; height:320px;">
+            <canvas id="chart-comp-scores"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Algorithm Comparison Table -->
+      <div class="card" style="margin-bottom:1.5rem;">
+        <div class="card-title">
+          <span>📋 Comprehensive Optimization Algorithm Comparison</span>
+          <span class="badge badge-blue">A* vs. CSP vs. Hill Climbing</span>
+        </div>
+        <div class="table-container">
+          <table id="table-comp-metrics">
+            <thead>
+              <tr>
+                <th>Algorithm</th>
+                <th>Disaster Management Purpose</th>
+                <th>Execution Time</th>
+                <th>Primary Metric</th>
+                <th>Primary Value</th>
+                <th>Efficiency Score</th>
+                <th>Objective Achieved in Bangladesh Context</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td colspan="7" style="text-align:center; color:var(--text-muted);">Run comparative benchmark to view results</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 3 Side-by-Side 2x2 Confusion Matrices -->
+      <div class="card">
+        <div class="card-title">
+          <span>🔲 Side-by-Side Confusion Matrices (TP / FP / FN / TN)</span>
+          <span class="badge badge-rose">Statistical Validation</span>
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1.25rem;">
+          
+          <!-- CM 1: A* -->
+          <div class="cm-wrapper">
+            <h4 style="font-size:0.88rem; color:#38bdf8; margin-bottom:8px;">A* Route Corridor Safety</h4>
+            <div class="cm-grid">
+              <div></div>
+              <div style="font-weight:600; color:var(--primary);">Pred Safe</div>
+              <div style="font-weight:600; color:var(--rose);">Pred Avoid</div>
+
+              <div style="font-weight:600; font-size:0.75rem; color:var(--primary);">Safe</div>
+              <div class="cm-cell cm-tp"><div class="cm-num" id="cmp-cm-a-tp">0</div><div class="cm-lbl">TP</div></div>
+              <div class="cm-cell cm-fn"><div class="cm-num" id="cmp-cm-a-fn">0</div><div class="cm-lbl">FN</div></div>
+
+              <div style="font-weight:600; font-size:0.75rem; color:var(--rose);">Hazard</div>
+              <div class="cm-cell cm-fp"><div class="cm-num" id="cmp-cm-a-fp">0</div><div class="cm-lbl">FP</div></div>
+              <div class="cm-cell cm-tn"><div class="cm-num" id="cmp-cm-a-tn">0</div><div class="cm-lbl">TN</div></div>
+            </div>
+            <div class="cm-metrics-row">
+              <div class="cm-metric-item"><div class="cm-metric-val" id="cmp-cm-a-acc">--</div><div class="cm-metric-name">Accuracy</div></div>
+              <div class="cm-metric-item"><div class="cm-metric-val" id="cmp-cm-a-prec">--</div><div class="cm-metric-name">Precision</div></div>
+              <div class="cm-metric-item"><div class="cm-metric-val" id="cmp-cm-a-f1">--</div><div class="cm-metric-name">F1</div></div>
+            </div>
+          </div>
+
+          <!-- CM 2: CSP -->
+          <div class="cm-wrapper">
+            <h4 style="font-size:0.88rem; color:#10b981; margin-bottom:8px;">CSP Relief Distress Allocation</h4>
+            <div class="cm-grid">
+              <div></div>
+              <div style="font-weight:600; color:var(--primary);">Assigned</div>
+              <div style="font-weight:600; color:var(--rose);">Unassigned</div>
+
+              <div style="font-weight:600; font-size:0.75rem; color:var(--primary);">Critical</div>
+              <div class="cm-cell cm-tp"><div class="cm-num" id="cmp-cm-c-tp">0</div><div class="cm-lbl">TP</div></div>
+              <div class="cm-cell cm-fn"><div class="cm-num" id="cmp-cm-c-fn">0</div><div class="cm-lbl">FN</div></div>
+
+              <div style="font-weight:600; font-size:0.75rem; color:var(--rose);">Low Need</div>
+              <div class="cm-cell cm-fp"><div class="cm-num" id="cmp-cm-c-fp">0</div><div class="cm-lbl">FP</div></div>
+              <div class="cm-cell cm-tn"><div class="cm-num" id="cmp-cm-c-tn">0</div><div class="cm-lbl">TN</div></div>
+            </div>
+            <div class="cm-metrics-row">
+              <div class="cm-metric-item"><div class="cm-metric-val" id="cmp-cm-c-acc">--</div><div class="cm-metric-name">Accuracy</div></div>
+              <div class="cm-metric-item"><div class="cm-metric-val" id="cmp-cm-c-prec">--</div><div class="cm-metric-name">Precision</div></div>
+              <div class="cm-metric-item"><div class="cm-metric-val" id="cmp-cm-c-f1">--</div><div class="cm-metric-name">F1</div></div>
+            </div>
+          </div>
+
+          <!-- CM 3: Hill Climbing -->
+          <div class="cm-wrapper">
+            <h4 style="font-size:0.88rem; color:#a855f7; margin-bottom:8px;">Hill Climbing Shelter Suitability</h4>
+            <div class="cm-grid">
+              <div></div>
+              <div style="font-weight:600; color:var(--primary);">Selected</div>
+              <div style="font-weight:600; color:var(--rose);">Rejected</div>
+
+              <div style="font-weight:600; font-size:0.75rem; color:var(--primary);">Safe Site</div>
+              <div class="cm-cell cm-tp"><div class="cm-num" id="cmp-cm-h-tp">0</div><div class="cm-lbl">TP</div></div>
+              <div class="cm-cell cm-fn"><div class="cm-num" id="cmp-cm-h-fn">0</div><div class="cm-lbl">FN</div></div>
+
+              <div style="font-weight:600; font-size:0.75rem; color:var(--rose);">Flood Low</div>
+              <div class="cm-cell cm-fp"><div class="cm-num" id="cmp-cm-h-fp">0</div><div class="cm-lbl">FP</div></div>
+              <div class="cm-cell cm-tn"><div class="cm-num" id="cmp-cm-h-tn">0</div><div class="cm-lbl">TN</div></div>
+            </div>
+            <div class="cm-metrics-row">
+              <div class="cm-metric-item"><div class="cm-metric-val" id="cmp-cm-h-acc">--</div><div class="cm-metric-name">Accuracy</div></div>
+              <div class="cm-metric-item"><div class="cm-metric-val" id="cmp-cm-h-prec">--</div><div class="cm-metric-name">Precision</div></div>
+              <div class="cm-metric-item"><div class="cm-metric-val" id="cmp-cm-h-f1">--</div><div class="cm-metric-name">F1</div></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Application Logic & Map Renderers -->
+  <script>
+    // Global State
+    let MAPS = {
+      dashboard: null,
+      astar: null,
+      csp: null,
+      hillclimbing: null
+    };
+
+    let CHARTS = {
+      dashRisk: null,
+      compTime: null,
+      compScores: null
+    };
+
+    let CURRENT_HIERARCHY = {};
+    let CURRENT_AREAS = [];
+
+    // Switch View Tabs
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      event.currentTarget.classList.add('active');
+      const target = document.getElementById('tab-' + tabId);
+      if (target) target.classList.add('active');
+
+      // Trigger map resize so Leaflet recalculates container bounds
+      setTimeout(() => {
+        if (MAPS[tabId]) MAPS[tabId].invalidateSize();
+      }, 200);
+
+      if (tabId === 'astar' && !MAPS.astar) initAStarMap();
+      if (tabId === 'csp' && !MAPS.csp) initCSPMap();
+      if (tabId === 'hillclimbing' && !MAPS.hillclimbing) initHCMap();
+    }
+
+    // Initialize Map with offline fallback tiles
+    function createMap(elementId, centerLat = 24.5, centerLon = 90.5, zoom = 8) {
+      const map = L.map(elementId, {
+        attributionControl: false
+      }).setView([centerLat, centerLon], zoom);
+
+      // Attempt loading OpenStreetMap tiles with dark mode styling filter
+      const osmTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        opacity: 0.8
+      });
+
+      osmTileLayer.addTo(map);
+
+      // Offline visual background fallback: creates stylized geographic bounds for Bangladesh
+      const bdBounds = [
+        [20.5, 88.0],
+        [26.7, 92.8]
+      ];
+      const bgRectangle = L.rectangle(bdBounds, {
+        color: "#1e293b",
+        weight: 1,
+        fillColor: "#0f172a",
+        fillOpacity: 0.35,
+        interactive: false
+      }).addTo(map);
+
+      return map;
+    }
+
+    // Init All Maps
+    function initDashboardMap() {
+      if (MAPS.dashboard) return;
+      MAPS.dashboard = createMap('map-dashboard', 24.6, 90.5, 7);
+    }
+
+    function initAStarMap() {
+      if (MAPS.astar) return;
+      MAPS.astar = createMap('map-astar', 25.06, 91.39, 11);
+      loadAStarAreas();
+    }
+
+    function initCSPMap() {
+      if (MAPS.csp) return;
+      MAPS.csp = createMap('map-csp', 25.06, 91.39, 11);
+      runCSP();
+    }
+
+    function initHCMap() {
+      if (MAPS.hillclimbing) return;
+      MAPS.hillclimbing = createMap('map-hc', 25.06, 91.39, 11);
+      runHillClimbing();
+    }
+
+    // Fetch Initial Summary & Hierarchy
+    async function initApp() {
+      initDashboardMap();
+
+      try {
+        const [sumRes, hRes] = await Promise.all([
+          fetch('/api/summary').then(r => r.json()),
+          fetch('/api/hierarchy').then(r => r.json())
+        ]);
+
+        // Populate KPIs
+        document.getElementById('kpi-pop').innerText = sumRes.total_population.toLocaleString();
+        document.getElementById('kpi-high-risk').innerText = sumRes.high_risk_areas.toLocaleString();
+        document.getElementById('kpi-shelters').innerText = sumRes.total_shelters_recorded.toLocaleString();
+        document.getElementById('kpi-families').innerText = sumRes.total_affected_families.toLocaleString() + ' Affected Families';
+
+        // Populate Hierarchy Dropdowns
+        CURRENT_HIERARCHY = hRes;
+        const zillaSelect = document.getElementById('dash-zilla');
+        const astarZilla = document.getElementById('astar-zilla');
+        const cspZilla = document.getElementById('csp-zilla');
+        const hcZilla = document.getElementById('hc-zilla');
+        const compZilla = document.getElementById('comp-zilla');
+
+        Object.keys(hRes).forEach(z => {
+          const opt = new Option(z, z);
+          zillaSelect.add(opt);
+        });
+
+        renderDashboardCharts(sumRes);
+        loadDashboardAreas();
+      } catch (err) {
+        console.error('Failed to initialize summary data:', err);
+      }
+    }
+
+    function onZillaChange(selectedZilla) {
+      const upaSelect = document.getElementById('dash-upazila');
+      upaSelect.innerHTML = '<option value="">All Upazilas</option>';
+      if (selectedZilla && CURRENT_HIERARCHY[selectedZilla]) {
+        Object.keys(CURRENT_HIERARCHY[selectedZilla]).forEach(u => {
+          upaSelect.add(new Option(u, u));
+        });
+      }
+      loadDashboardAreas();
+    }
+
+    // Load Areas for Dashboard Map
+    let dashMarkersLayer = null;
+    async function loadDashboardAreas() {
+      const zilla = document.getElementById('dash-zilla').value;
+      const upazila = document.getElementById('dash-upazila').value;
+
+      try {
+        const res = await fetch(`/api/areas?zilla=${encodeURIComponent(zilla)}&upazila=${encodeURIComponent(upazila)}`);
+        const data = await res.json();
+        CURRENT_AREAS = data.areas;
+
+        if (dashMarkersLayer) MAPS.dashboard.removeLayer(dashMarkersLayer);
+        dashMarkersLayer = L.layerGroup().addTo(MAPS.dashboard);
+
+        const latLngs = [];
+        data.areas.forEach(a => {
+          latLngs.push([a.latitude, a.longitude]);
+          const color = a.flood_risk_level >= 0.70 ? '#f43f5e' : (a.flood_risk_level >= 0.40 ? '#f59e0b' : '#10b981');
+          
+          const circle = L.circleMarker([a.latitude, a.longitude], {
+            radius: Math.min(10, Math.max(4, a.population / 1200)),
+            fillColor: color,
+            color: '#fff',
+            weight: 1,
+            fillOpacity: 0.85
+          });
+
+          circle.bindPopup(`
+            <div style="font-size:0.8rem; line-height:1.4;">
+              <strong style="color:#0f172a;">${a.area_name}</strong><br>
+              <strong>Upazila:</strong> ${a.upazila}<br>
+              <strong>Zilla:</strong> ${a.zilla}<br>
+              <strong>Flood Risk:</strong> ${(a.flood_risk_level * 100).toFixed(1)}%<br>
+              <strong>Elevation:</strong> ${a.elevation} m<br>
+              <strong>Population:</strong> ${a.population.toLocaleString()}<br>
+              <strong>Affected Families:</strong> ${a.affected_families.toLocaleString()}<br>
+              <strong>Shelters Nearby:</strong> ${a.available_shelters_nearby}
+            </div>
+          `);
+          circle.addTo(dashMarkersLayer);
+        });
+
+        if (latLngs.length > 0) {
+          MAPS.dashboard.fitBounds(L.latLngBounds(latLngs), { padding: [30, 30] });
+        }
+      } catch (e) {
+        console.error("Dashboard area load error:", e);
+      }
+    }
+
+    // Chart.js Dashboard Charts
+    function renderDashboardCharts(summary) {
+      const ctx = document.getElementById('chart-dashboard-risk').getContext('2d');
+      if (CHARTS.dashRisk) CHARTS.dashRisk.destroy();
+
+      CHARTS.dashRisk = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: ['High Risk (Severe Hazard)', 'Medium Risk (Monsoon Vulnerable)', 'Low Risk (Elevated High Ground)'],
+          datasets: [{
+            data: [summary.high_risk_areas, summary.medium_risk_areas, summary.low_risk_areas],
+            backgroundColor: ['#f43f5e', '#f59e0b', '#10b981'],
+            borderColor: '#151f32',
+            borderWidth: 3
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: { color: '#cbd5e1', font: { size: 11 } }
+            }
+          }
+        }
+      });
+    }
+
+    // ==========================================
+    // ALGORITHM 1: A* SEARCH LOGIC
+    // ==========================================
+    let astarRouteLayer = null;
+
+    async function loadAStarAreas() {
+      const zilla = document.getElementById('astar-zilla').value;
+      try {
+        const res = await fetch(`/api/areas?zilla=${encodeURIComponent(zilla)}`);
+        const data = await res.json();
+        const startSel = document.getElementById('astar-start-node');
+        const goalSel = document.getElementById('astar-goal-node');
+
+        startSel.innerHTML = '';
+        goalSel.innerHTML = '';
+
+        data.areas.slice(0, 40).forEach((a, idx) => {
+          const opt1 = new Option(`${a.area_name} (${a.upazila}) [Risk: ${(a.flood_risk_level*100).toFixed(0)}%]`, a.area_id);
+          const opt2 = new Option(`${a.area_name} (${a.upazila}) [Elev: ${a.elevation}m, Shelters: ${a.available_shelters_nearby}]`, a.area_id);
+          startSel.add(opt1);
+          goalSel.add(opt2);
+        });
+
+        if (goalSel.options.length > 5) goalSel.selectedIndex = 5;
+        runAStar();
+      } catch (e) {
+        console.error("A* area load error:", e);
+      }
+    }
+
+    async function runAStar() {
+      const zilla = document.getElementById('astar-zilla').value;
+      const start_id = document.getElementById('astar-start-node').value;
+      const goal_id = document.getElementById('astar-goal-node').value;
+      const risk_weight = parseFloat(document.getElementById('astar-risk-weight').value);
+
+      try {
+        const res = await fetch('/api/run/astar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ zilla, start_id, goal_id, risk_weight })
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert('A* Search Notice: ' + data.error);
+          return;
+        }
+
+        // Update KPIs
+        document.getElementById('astar-res-safety').innerText = data.safety_score + '%';
+        document.getElementById('astar-res-dist').innerText = data.total_distance_km + ' km';
+        document.getElementById('astar-res-time').innerText = data.execution_time_ms + ' ms';
+        document.getElementById('astar-res-eff').innerText = data.efficiency_score + '%';
+        document.getElementById('astar-res-safetysub').innerText = `+${data.comparison.safety_improvement_percent}% safer than direct`;
+
+        // Update Confusion Matrix
+        const cm = data.confusion_matrix.matrix;
+        const cmm = data.confusion_matrix.metrics;
+        document.getElementById('astar-cm-tp').innerText = cm.TP;
+        document.getElementById('astar-cm-fn').innerText = cm.FN;
+        document.getElementById('astar-cm-fp').innerText = cm.FP;
+        document.getElementById('astar-cm-tn').innerText = cm.TN;
+        document.getElementById('astar-cm-acc').innerText = cmm.accuracy;
+        document.getElementById('astar-cm-prec').innerText = cmm.precision;
+        document.getElementById('astar-cm-rec').innerText = cmm.recall;
+        document.getElementById('astar-cm-f1').innerText = cmm.f1_score;
+
+        // Render Map Routes
+        if (astarRouteLayer) MAPS.astar.removeLayer(astarRouteLayer);
+        astarRouteLayer = L.layerGroup().addTo(MAPS.astar);
+
+        // 1. Draw Naive Route (Red)
+        if (data.comparison.naive_shortest.coordinates.length > 0) {
+          const naiveLine = L.polyline(data.comparison.naive_shortest.coordinates, {
+            color: '#f43f5e',
+            weight: 3,
+            dashArray: '6, 6',
+            opacity: 0.75
+          }).addTo(astarRouteLayer);
+          naiveLine.bindPopup("Naive Shortest Physical Distance (High Flood Inundation Risk)");
+        }
+
+        // 2. Draw A* Optimal Safe Route (Green)
+        if (data.coordinates.length > 0) {
+          const safeLine = L.polyline(data.coordinates, {
+            color: '#10b981',
+            weight: 5,
+            opacity: 0.95
+          }).addTo(astarRouteLayer);
+          safeLine.bindPopup(`A* Safe Route Corridor: ${data.total_distance_km} km (Safety: ${data.safety_score}%)`);
+
+          // Start & Goal Markers
+          const startMarker = L.circleMarker(data.coordinates[0], {
+            radius: 8, fillColor: '#3b82f6', color: '#fff', weight: 2, fillOpacity: 1
+          }).bindPopup(`<strong>Start:</strong> ${data.start_node.name}`).addTo(astarRouteLayer);
+
+          const goalMarker = L.circleMarker(data.coordinates[data.coordinates.length - 1], {
+            radius: 10, fillColor: '#10b981', color: '#fff', weight: 2, fillOpacity: 1
+          }).bindPopup(`<strong>Safe Shelter Goal:</strong> ${data.goal_node.name}`).addTo(astarRouteLayer);
+
+          MAPS.astar.fitBounds(safeLine.getBounds(), { padding: [40, 40] });
+        }
+
+        // Populate Sequential Table
+        const tb = document.querySelector('#table-astar-steps tbody');
+        tb.innerHTML = '';
+        data.route_path.forEach(s => {
+          const rkBadge = s.flood_risk >= 0.70 ? 'badge-rose' : (s.flood_risk >= 0.40 ? 'badge-amber' : 'badge-emerald');
+          tb.innerHTML += `
+            <tr>
+              <td><strong>${s.step}</strong></td>
+              <td>${s.area_name}</td>
+              <td>${s.upazila}</td>
+              <td>${s.elevation_m} m</td>
+              <td><span class="badge ${rkBadge}">${(s.flood_risk * 100).toFixed(0)}%</span></td>
+              <td>${s.segment_distance_km || 0} km</td>
+            </tr>
+          `;
+        });
+      } catch (e) {
+        console.error("A* Execution error:", e);
+      }
+    }
+
+    // ==========================================
+    // ALGORITHM 2: CSP LOGIC
+    // ==========================================
+    let cspMapLayer = null;
+
+    async function runCSP() {
+      const zilla = document.getElementById('csp-zilla').value;
+      const available_teams = parseInt(document.getElementById('csp-teams').value);
+      const team_capacity = parseInt(document.getElementById('csp-capacity').value);
+      const max_response_time = parseFloat(document.getElementById('csp-max-time').value);
+      const max_teams_per_area = parseInt(document.getElementById('csp-max-per-area').value);
+
+      try {
+        const res = await fetch('/api/run/csp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ zilla, available_teams, team_capacity, max_response_time, max_teams_per_area })
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert('CSP Notice: ' + data.error);
+          return;
+        }
+
+        // Update KPIs
+        document.getElementById('csp-res-csrate').innerText = data.constraint_satisfaction_rate + '%';
+        document.getElementById('csp-res-coverage').innerText = data.coverage_percentage + '%';
+        document.getElementById('csp-res-families').innerText = `${data.total_covered_families.toLocaleString()} / ${data.total_affected_families.toLocaleString()} Families`;
+        document.getElementById('csp-res-time').innerText = data.avg_response_time_mins + ' mins';
+        document.getElementById('csp-res-exectime').innerText = data.execution_time_ms + ' ms';
+
+        // Update Confusion Matrix
+        const cm = data.confusion_matrix.matrix;
+        const cmm = data.confusion_matrix.metrics;
+        document.getElementById('csp-cm-tp').innerText = cm.TP;
+        document.getElementById('csp-cm-fn').innerText = cm.FN;
+        document.getElementById('csp-cm-fp').innerText = cm.FP;
+        document.getElementById('csp-cm-tn').innerText = cm.TN;
+        document.getElementById('csp-cm-acc').innerText = cmm.accuracy;
+        document.getElementById('csp-cm-prec').innerText = cmm.precision;
+        document.getElementById('csp-cm-rec').innerText = cmm.recall;
+        document.getElementById('csp-cm-f1').innerText = cmm.f1_score;
+
+        // Render Map
+        if (cspMapLayer) MAPS.csp.removeLayer(cspMapLayer);
+        cspMapLayer = L.layerGroup().addTo(MAPS.csp);
+
+        const latLngs = [];
+        data.assignments.forEach(a => {
+          latLngs.push([a.area_lat, a.area_lon]);
+          latLngs.push([a.base_lat, a.base_lon]);
+
+          // Line from Base to Area
+          L.polyline([[a.base_lat, a.base_lon], [a.area_lat, a.area_lon]], {
+            color: '#38bdf8', weight: 2, dashArray: '4, 4', opacity: 0.8
+          }).addTo(cspMapLayer);
+
+          // Target Area Marker
+          L.circleMarker([a.area_lat, a.area_lon], {
+            radius: 7, fillColor: '#10b981', color: '#fff', weight: 1.5, fillOpacity: 0.9
+          }).bindPopup(`
+            <strong>${a.assigned_area_name}</strong><br>
+            Assigned: ${a.team_name}<br>
+            Families Supported: ${a.families_supported}<br>
+            Transit Time: ${a.response_time_mins} mins (${a.distance_km} km)
+          `).addTo(cspMapLayer);
+        });
+
+        if (latLngs.length > 0) {
+          MAPS.csp.fitBounds(L.latLngBounds(latLngs), { padding: [35, 35] });
+        }
+
+        // Table
+        const tb = document.querySelector('#table-csp-assignments tbody');
+        tb.innerHTML = '';
+        data.assignments.forEach(a => {
+          tb.innerHTML += `
+            <tr>
+              <td><span class="badge badge-blue">${a.team_id}</span></td>
+              <td>${a.base_name.split('(')[0]}</td>
+              <td><strong>${a.assigned_area_name}</strong></td>
+              <td>${a.upazila}</td>
+              <td>${a.response_time_mins} min</td>
+              <td>${a.families_supported}</td>
+            </tr>
+          `;
+        });
+      } catch (e) {
+        console.error("CSP error:", e);
+      }
+    }
+
+    // ==========================================
+    // ALGORITHM 3: HILL CLIMBING LOGIC
+    // ==========================================
+    let hcMapLayer = null;
+
+    async function runHillClimbing() {
+      const zilla = document.getElementById('hc-zilla').value;
+      const top_k = parseInt(document.getElementById('hc-topk').value);
+      const coverage_radius_km = parseFloat(document.getElementById('hc-radius').value);
+      const max_restarts = parseInt(document.getElementById('hc-restarts').value);
+
+      try {
+        const res = await fetch('/api/run/hillclimbing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ zilla, top_k, coverage_radius_km, max_restarts })
+        });
+        const data = await res.json();
+        if (data.error) {
+          alert('Hill Climbing Notice: ' + data.error);
+          return;
+        }
+
+        // KPIs
+        document.getElementById('hc-res-quality').innerText = data.average_suitability_score + '/100';
+        document.getElementById('hc-res-pop').innerText = data.population_covered.toLocaleString();
+        document.getElementById('hc-res-popsub').innerText = `${data.population_coverage_percent}% Regional Coverage`;
+        document.getElementById('hc-res-cap').innerText = data.total_shelter_capacity.toLocaleString() + ' Persons';
+        document.getElementById('hc-res-time').innerText = data.execution_time_ms + ' ms';
+
+        // Confusion Matrix
+        const cm = data.confusion_matrix.matrix;
+        const cmm = data.confusion_matrix.metrics;
+        document.getElementById('hc-cm-tp').innerText = cm.TP;
+        document.getElementById('hc-cm-fn').innerText = cm.FN;
+        document.getElementById('hc-cm-fp').innerText = cm.FP;
+        document.getElementById('hc-cm-tn').innerText = cm.TN;
+        document.getElementById('hc-cm-acc').innerText = cmm.accuracy;
+        document.getElementById('hc-cm-prec').innerText = cmm.precision;
+        document.getElementById('hc-cm-rec').innerText = cmm.recall;
+        document.getElementById('hc-cm-f1').innerText = cmm.f1_score;
+
+        // Render Map
+        if (hcMapLayer) MAPS.hillclimbing.removeLayer(hcMapLayer);
+        hcMapLayer = L.layerGroup().addTo(MAPS.hillclimbing);
+
+        const latLngs = [];
+        data.shelters.forEach((s, idx) => {
+          latLngs.push([s.latitude, s.longitude]);
+
+          // Coverage Circle
+          L.circle([s.latitude, s.longitude], {
+            radius: s.coverage_radius_km * 1000,
+            color: '#8b5cf6',
+            fillColor: '#8b5cf6',
+            fillOpacity: 0.12,
+            weight: 1.5
+          }).addTo(hcMapLayer);
+
+          // Shelter Marker
+          L.circleMarker([s.latitude, s.longitude], {
+            radius: 9, fillColor: '#8b5cf6', color: '#fff', weight: 2, fillOpacity: 0.95
+          }).bindPopup(`
+            <strong>Rank #${idx + 1}: ${s.name}</strong><br>
+            <strong>Type:</strong> ${s.name_bn}<br>
+            <strong>Upazila:</strong> ${s.upazila}<br>
+            <strong>Elevation:</strong> ${s.elevation} m<br>
+            <strong>Capacity:</strong> ${s.capacity.toLocaleString()} persons<br>
+            <strong>Suitability Score:</strong> ${s.suitability_score} / 100<br>
+            <strong>Pop Covered:</strong> ${s.covered_population.toLocaleString()}
+          `).addTo(hcMapLayer);
+        });
+
+        if (latLngs.length > 0) {
+          MAPS.hillclimbing.fitBounds(L.latLngBounds(latLngs), { padding: [40, 40] });
+        }
+
+        // Table
+        const tb = document.querySelector('#table-hc-shelters tbody');
+        tb.innerHTML = '';
+        data.shelters.forEach((s, idx) => {
+          tb.innerHTML += `
+            <tr>
+              <td><strong>#${idx + 1}</strong></td>
+              <td>${s.name} <div style="font-size:0.7rem; color:#38bdf8;">${s.name_bn}</div></td>
+              <td>${s.elevation} m</td>
+              <td>${s.capacity.toLocaleString()}</td>
+              <td><span class="badge badge-emerald">${s.suitability_score}</span></td>
+              <td>${s.covered_population.toLocaleString()}</td>
+            </tr>
+          `;
+        });
+      } catch (e) {
+        console.error("Hill Climbing error:", e);
+      }
+    }
+
+    // ==========================================
+    // TAB 5: COMPARATIVE BENCHMARK LOGIC
+    // ==========================================
+    async function runComparisonBenchmark() {
+      const zilla = document.getElementById('comp-zilla').value;
+
+      try {
+        const res = await fetch('/api/run/compare_all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ zilla })
+        });
+        const data = await res.json();
+
+        document.getElementById('comp-total-time').innerText = data.benchmark_summary.total_benchmark_time_ms + ' ms';
+
+        // Update Comparison Table
+        const tb = document.querySelector('#table-comp-metrics tbody');
+        tb.innerHTML = '';
+        data.metrics_table.forEach(m => {
+          tb.innerHTML += `
+            <tr>
+              <td><strong>${m.algorithm}</strong></td>
+              <td>${m.purpose}</td>
+              <td><span class="badge badge-amber">${m.execution_time_ms} ms</span></td>
+              <td>${m.primary_metric_name}</td>
+              <td><strong>${m.primary_metric_value}</strong></td>
+              <td><span class="badge badge-emerald">${m.efficiency_score}%</span></td>
+              <td>${m.objective_achieved}</td>
+            </tr>
+          `;
+        });
+
+        // Update Side-by-Side 3 Confusion Matrices
+        const a_cm = data.detailed_results.astar.confusion_matrix;
+        document.getElementById('cmp-cm-a-tp').innerText = a_cm.matrix.TP;
+        document.getElementById('cmp-cm-a-fn').innerText = a_cm.matrix.FN;
+        document.getElementById('cmp-cm-a-fp').innerText = a_cm.matrix.FP;
+        document.getElementById('cmp-cm-a-tn').innerText = a_cm.matrix.TN;
+        document.getElementById('cmp-cm-a-acc').innerText = a_cm.metrics.accuracy;
+        document.getElementById('cmp-cm-a-prec').innerText = a_cm.metrics.precision;
+        document.getElementById('cmp-cm-a-f1').innerText = a_cm.metrics.f1_score;
+
+        const c_cm = data.detailed_results.csp.confusion_matrix;
+        document.getElementById('cmp-cm-c-tp').innerText = c_cm.matrix.TP;
+        document.getElementById('cmp-cm-c-fn').innerText = c_cm.matrix.FN;
+        document.getElementById('cmp-cm-c-fp').innerText = c_cm.matrix.FP;
+        document.getElementById('cmp-cm-c-tn').innerText = c_cm.matrix.TN;
+        document.getElementById('cmp-cm-c-acc').innerText = c_cm.metrics.accuracy;
+        document.getElementById('cmp-cm-c-prec').innerText = c_cm.metrics.precision;
+        document.getElementById('cmp-cm-c-f1').innerText = c_cm.metrics.f1_score;
+
+        const h_cm = data.detailed_results.hillclimbing.confusion_matrix;
+        document.getElementById('cmp-cm-h-tp').innerText = h_cm.matrix.TP;
+        document.getElementById('cmp-cm-h-fn').innerText = h_cm.matrix.FN;
+        document.getElementById('cmp-cm-h-fp').innerText = h_cm.matrix.FP;
+        document.getElementById('cmp-cm-h-tn').innerText = h_cm.matrix.TN;
+        document.getElementById('cmp-cm-h-acc').innerText = h_cm.metrics.accuracy;
+        document.getElementById('cmp-cm-h-prec').innerText = h_cm.metrics.precision;
+        document.getElementById('cmp-cm-h-f1').innerText = h_cm.metrics.f1_score;
+
+        // Render Charts
+        renderComparisonCharts(data);
+      } catch (e) {
+        console.error("Comparison benchmark error:", e);
+      }
+    }
+
+    function renderComparisonCharts(data) {
+      // 1. Time Chart
+      const ctxTime = document.getElementById('chart-comp-time').getContext('2d');
+      if (CHARTS.compTime) CHARTS.compTime.destroy();
+
+      CHARTS.compTime = new Chart(ctxTime, {
+        type: 'bar',
+        data: {
+          labels: ['A* Route Optimization', 'CSP Team Allocation', 'Hill Climbing Shelters'],
+          datasets: [{
+            label: 'Execution Time (ms)',
+            data: [
+              data.detailed_results.astar.execution_time_ms,
+              data.detailed_results.csp.execution_time_ms,
+              data.detailed_results.hillclimbing.execution_time_ms
+            ],
+            backgroundColor: ['#3b82f6', '#10b981', '#8b5cf6'],
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: { color: '#94a3b8' },
+              grid: { color: 'rgba(255,255,255,0.06)' }
+            },
+            x: {
+              ticks: { color: '#cbd5e1' },
+              grid: { display: false }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+
+      // 2. Scores Chart
+      const ctxScores = document.getElementById('chart-comp-scores').getContext('2d');
+      if (CHARTS.compScores) CHARTS.compScores.destroy();
+
+      CHARTS.compScores = new Chart(ctxScores, {
+        type: 'bar',
+        data: {
+          labels: ['A* Safety & Efficiency', 'CSP Constraint Satisfaction', 'Hill Climbing Quality'],
+          datasets: [
+            {
+              label: 'Primary Metric (%)',
+              data: [
+                data.detailed_results.astar.safety_score,
+                data.detailed_results.csp.constraint_satisfaction_rate,
+                data.detailed_results.hillclimbing.average_suitability_score
+              ],
+              backgroundColor: '#06b6d4',
+              borderRadius: 6
+            },
+            {
+              label: 'Coverage / Efficiency (%)',
+              data: [
+                data.detailed_results.astar.efficiency_score,
+                data.detailed_results.csp.coverage_percentage,
+                data.detailed_results.hillclimbing.population_coverage_percent
+              ],
+              backgroundColor: '#10b981',
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              ticks: { color: '#94a3b8' },
+              grid: { color: 'rgba(255,255,255,0.06)' }
+            },
+            x: {
+              ticks: { color: '#cbd5e1' },
+              grid: { display: false }
+            }
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#cbd5e1' }
+            }
+          }
+        }
+      });
+    }
+
+    // Auto load on startup
+    window.addEventListener('DOMContentLoaded', () => {
+      initApp();
+      // Pre-run comparison benchmark for instant view
+      setTimeout(runComparisonBenchmark, 800);
+    });
+  </script>
+</body>
+</html>
